@@ -1,9 +1,37 @@
 <html>
     <head>
         <title>Sample App</title>
+        <style type="text/css">
+            body {
+                background: #1f1d1f;
+                display: flex;
+                padding: 0;
+                justify-content: center;
+            }
+
+            .root {
+
+            }
+
+            .canvas-root {
+                position: relative;
+                background: #fff;
+            }
+
+            .canvas-layer {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+        </style>
     </head>
     <body>
-        <div id='root'></div>
+        <div class="root">
+            <div class="canvas-root" id="main-input">
+                <canvas class="canvas-main" id="main-canvas" width="800" height="600"></canvas>
+                <canvas class="canvas-layer" id="main-current" width="800" height="600"></canvas>
+            </div>
+        </div>
         <script src="./target/scala-2.12/scalajs-bundler/main/root-fastopt-bundle.js"></script>
     </body>
 </html>

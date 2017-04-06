@@ -38,10 +38,18 @@ object AppLauncher extends JSApp {
         "/dns4/nyc-2.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmSoLV4Bbm51jM9C4gDYZQ9Cy3U6aXMJDAbzgu2fzaDs64"
       ).map(addr => new Multiaddr(addr)).map(ipfs.swarm.connect))
     }.andThen {
-      case Success(_) => println("Connected to all bootstrap nodes!")
+      case Success(_) =>
+        println("Connected to all bootstrap nodes!")
       case Failure(e) => throw e; //TODO: Alert or sth
     }
 
-    new AppMain(ipfs)
+    ipfs.on("ready").map { _: Any =>
+      println(s"Online: ${ipfs.isOnline}")
+
+      new AppMain(ipfs)
+    }.andThen {
+      case Success(_) => println("Online!")
+      case Failure(e) => throw e; //TODO: Alert or sth
+    }
   }
 }
