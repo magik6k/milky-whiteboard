@@ -6,8 +6,9 @@ import org.scalajs.dom.document
 import org.scalajs.dom.raw._
 
 class Canvas(name: String, ipfs: IpfsNode, room: String) {
-  private val broadcaster = new CanvasBroadcaster(ipfs, room)
-  private val subscriber = new CanvasSubscriber(ipfs, room)
+  private val chain = new Chain(ipfs)
+  private val broadcaster = new CanvasBroadcaster(ipfs, chain, room)
+  private val subscriber = new CanvasSubscriber(ipfs, chain, room, this)
 
   private val mainCanvas = document.getElementById(s"$name-canvas").asInstanceOf[HTMLCanvasElement]
   private val currentCanvas = document.getElementById(s"$name-current").asInstanceOf[HTMLCanvasElement]
@@ -53,7 +54,7 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
     commit()
   }
 
-  def draw(e: MouseEvent): Unit = {
+  private def draw(e: MouseEvent): Unit = {
     if((e.buttons & 1) == 1 && startX > 0) {
       val curX = e.clientX - input.offsetLeft
       val curY = e.clientY - input.offsetTop
@@ -64,13 +65,15 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
       currentCtx.stroke()
       currentCtx.closePath()
 
+      broadcaster.live((startX, startY), (curX, curY))
+
       startX = curX
       startY = curY
       clean = false
     }
   }
 
-  def commit(): Unit = {
+  private def commit(): Unit = {
     if(clean)
       return
 
@@ -88,5 +91,49 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
     img.src = data
 
     broadcaster.commit(data)
+  }
+
+  def drawImage(data: String, peer: String): Unit = {
+    val img = document.createElement("img").asInstanceOf[HTMLImageElement]
+    img.onload = { e: Event =>
+      mainCtx.drawImage(img, 0, 0)
+      if(peer != null)
+        freeTempCanvas(peer)
+    }
+
+    img.src = data
+
+
+  }
+
+  def drawPart(startX: Double, startY: Double, endX: Double, endY: Double, peer: String): Unit = {
+    val ctx = getTempCanvas(peer)
+
+    ctx.beginPath()
+    ctx.moveTo(startX, startY)
+    ctx.lineTo(endX, endY)
+    ctx.stroke()
+    ctx.closePath()
+  }
+
+  private def freeTempCanvas(peer: String): Unit = {
+    val canvas = document.getElementById(s"$name-$peer")
+    if(canvas != null)
+      canvas.parentNode.removeChild(canvas)
+  }
+
+  private def getTempCanvas(peer: String): CanvasRenderingContext2D = {
+    var canvasElement = document.getElementById(s"$name-$peer").asInstanceOf[HTMLCanvasElement]
+    if(canvasElement == null) {
+      canvasElement = document.createElement("canvas").asInstanceOf[HTMLCanvasElement]
+      canvasElement.id = s"$name-$peer"
+      canvasElement.classList.add("canvas-layer")
+      canvasElement.width = 800
+      canvasElement.height = 600
+
+      input.appendChild(canvasElement)
+    }
+
+    canvasElement.getContext("2d").asInstanceOf[CanvasRenderingContext2D]
   }
 }

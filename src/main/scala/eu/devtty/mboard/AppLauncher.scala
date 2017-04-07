@@ -16,12 +16,11 @@ object AppLauncher extends JSApp {
       EXPERIMENTAL = js.Dynamic.literal(
         pubsub = true
       ),
-      Discovery = js.Dynamic.literal(
-        MDNS = js.Dynamic.literal(
-          Enabled = false
-        ),
-        webRTCStar = js.Dynamic.literal(
-          Enabled = true
+      config = js.Dynamic.literal(
+        Addresses = js.Dynamic.literal(
+          Swarm = js.Array(
+            "/libp2p-webrtc-star/dns4/star-signal.cloud.ipfs.team/wss"
+          )
         )
       )
     ))
