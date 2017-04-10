@@ -44,6 +44,7 @@ object AppLauncher extends JSApp {
 
     ipfs.on("ready").map { _: Any =>
       println(s"Online: ${ipfs.isOnline}")
+      Status.status("Node online")
 
       new AppMain(ipfs)
     }.andThen {

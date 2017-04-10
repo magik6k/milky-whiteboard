@@ -1,12 +1,13 @@
 package eu.devtty.mboard.canvas
 
 import eu.devtty.ipfs.IpfsNode
-import eu.devtty.mboard.PubsubEvents
+import eu.devtty.mboard.{PubsubEvents, Status}
 import eu.devtty.mboard.util.Buffer
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js.timers.setTimeout
+import scala.util.{Failure, Success}
 
 
 class ChainInitializer(ipfs: IpfsNode, room: String, canvas: Canvas) {
@@ -17,6 +18,7 @@ class ChainInitializer(ipfs: IpfsNode, room: String, canvas: Canvas) {
     val msg = Buffer.alloc(1)
     msg.writeInt8(PubsubEvents.REQUEST_CHAIN, 0)
     ipfs.pubsub.publish(room, msg)
+    Status.status("Seeking peers")
   }
 
   setTimeout(5000) {
@@ -39,10 +41,11 @@ class ChainInitializer(ipfs: IpfsNode, room: String, canvas: Canvas) {
 
   def init(): Unit = {
     if(bestBootCandidate != null) {
-
+      Status.status("Downloading chain")
 
       def parseChain(top: Block): Future[Vector[String]] = {
         println(s"Chain get at depth ${top.depth}")
+        Status.status(s"Downloading block ${top.depth}")
         val nodes = top.nodes.toArray.toVector
         if(top.previous != null) {
           ipfs.dag.get(top.previous).map {_.value.asInstanceOf[Block]}.flatMap { previous =>
@@ -56,11 +59,17 @@ class ChainInitializer(ipfs: IpfsNode, room: String, canvas: Canvas) {
       parseChain(bestBootCandidate).map { blocks =>
         Future.sequence(blocks.map { hash =>
           ipfs.block.get(hash).map { block =>
-            println(s"GOT $hash")
+            Status.status(s"Downloading part $hash")
             block
           }
-        }).map(_.foreach(block => canvas.drawImage(block.data.toString(), null)))
+        }).map(_.foreach(block => canvas.drawImage(block.data.toString(), null))).andThen {
+          case Success(_) => Status.done()
+          case Failure(e) => Status.status("Error; see dev console"); throw e
+        }
       }
+    } else {
+      Status.done()
     }
+
   }
 }

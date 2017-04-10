@@ -6,6 +6,9 @@ import org.scalajs.dom.document
 import org.scalajs.dom.raw._
 
 class Canvas(name: String, ipfs: IpfsNode, room: String) {
+  private val INITIAL_WIDTH = 1600.0
+  private val INITIAL_HEIGHT = 1200.0
+
   private val chain = new Chain(ipfs)
   private val broadcaster = new CanvasBroadcaster(ipfs, chain, room)
   private val subscriber = new CanvasSubscriber(ipfs, chain, room, this)
@@ -27,9 +30,10 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
 
   input.onmousedown = { e: dom.MouseEvent =>
     if(e.button == 0) {
-      currentCtx.fillRect(e.clientX - input.offsetLeft - 1, e.clientY - input.offsetTop - 1, 3, 3)
-      startX = e.clientX - input.offsetLeft
-      startY = e.clientY - input.offsetTop
+      val (posX, posY) = getPos(e)
+      startX = posX
+      startY = posY
+      currentCtx.fillRect(startX - 1, startY - 1, 3, 3)
       clean = false
     }
   }
@@ -45,8 +49,9 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
 
   input.onmouseenter = { e: dom.MouseEvent =>
     if((e.buttons & 1) == 1) {
-      startX = e.clientX - input.offsetLeft
-      startY = e.clientY - input.offsetTop
+      val (posX, posY) = getPos(e)
+      startX = posX
+      startY = posY
     }
   }
 
@@ -54,10 +59,14 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
     commit()
   }
 
+  private def getPos(e: MouseEvent): (Double, Double) = {
+    val raw = (e.clientX - input.offsetLeft, e.clientY - input.offsetTop)
+    (raw._1 * (INITIAL_WIDTH / mainCanvas.clientWidth), raw._2 * (INITIAL_HEIGHT / mainCanvas.clientHeight))
+  }
+
   private def draw(e: MouseEvent): Unit = {
     if((e.buttons & 1) == 1 && startX > 0) {
-      val curX = e.clientX - input.offsetLeft
-      val curY = e.clientY - input.offsetTop
+      val (curX, curY) = getPos(e)
 
       currentCtx.beginPath()
       currentCtx.moveTo(startX, startY)
@@ -128,8 +137,8 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
       canvasElement = document.createElement("canvas").asInstanceOf[HTMLCanvasElement]
       canvasElement.id = s"$name-$peer"
       canvasElement.classList.add("canvas-layer")
-      canvasElement.width = 800
-      canvasElement.height = 600
+      canvasElement.width = INITIAL_WIDTH.toInt
+      canvasElement.height = INITIAL_HEIGHT.toInt
 
       input.appendChild(canvasElement)
     }

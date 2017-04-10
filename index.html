@@ -2,11 +2,14 @@
     <head>
         <title>Sample App</title>
         <style type="text/css">
-            body {
+            body, html {
                 background: #1f1d1f;
                 display: flex;
                 padding: 0;
+                margin: 0;
                 justify-content: center;
+                align-items: center;
+                color: #f1f1f1;
             }
 
             .root {
@@ -16,20 +19,57 @@
             .canvas-root {
                 position: relative;
                 background: #fff;
+
+                max-width: 100vw;
+                max-height: 75vw;
+                width: 132vh;
+                height: 100vh;
             }
 
             .canvas-layer {
                 position: absolute;
                 top: 0;
                 left: 0;
+
+                max-width: 100vw;
+                max-height: 75vw;
+                width: 132vh;
+                height: 100vh;
+            }
+
+            .boot-cover {
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                right: 0;
+                background: #0f0f0f;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .text-center {
+                text-align: center;
+            }
+
+            p {
+                margin: 0;
+                padding: 0;
             }
         </style>
     </head>
     <body>
         <div class="root">
             <div class="canvas-root" id="main-input">
-                <canvas class="canvas-main" id="main-canvas" width="800" height="600"></canvas>
-                <canvas class="canvas-layer" id="main-current" width="800" height="600"></canvas>
+                <canvas class="canvas-main canvas-layer" id="main-canvas" width="1600" height="1200"></canvas>
+                <canvas class="canvas-layer" id="main-current" width="1600" height="1200"></canvas>
+                <div class="boot-cover" id="boot-cover">
+                    <div class="text-center">
+                        <p>Starting up</p>
+                        <p id="status">Initializing</p>
+                    </div>
+                </div>
             </div>
         </div>
         <script src="./target/scala-2.12/scalajs-bundler/main/root-fastopt-bundle.js"></script>
