@@ -1,15 +1,19 @@
 package eu.devtty.mboard.canvas
 
-import eu.devtty.ipfs.IpfsNode
+import eu.devtty.ipfs.{BlockApi, IpfsNode}
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.raw._
+import eu.devtty.ipfs.{Block => IpfsBlock}
+import eu.devtty.mboard.util.Buffer
+
+import scala.concurrent.Future
 
 class Canvas(name: String, ipfs: IpfsNode, room: String) {
   private val INITIAL_WIDTH = 1600.0
   private val INITIAL_HEIGHT = 1200.0
 
-  private val chain = new Chain(ipfs)
+  private val chain = new Chain(ipfs, this)
   private val broadcaster = new CanvasBroadcaster(ipfs, chain, room)
   private val subscriber = new CanvasSubscriber(ipfs, chain, room, this)
 
@@ -95,11 +99,10 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
     img.onload = { e: Event =>
       mainCtx.drawImage(img, 0, 0)
       currentCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height)
+      broadcaster.commit(data)
     }
 
     img.src = data
-
-    broadcaster.commit(data)
   }
 
   def drawImage(data: String, peer: String): Unit = {
@@ -123,6 +126,14 @@ class Canvas(name: String, ipfs: IpfsNode, room: String) {
     ctx.lineTo(endX, endY)
     ctx.stroke()
     ctx.closePath()
+  }
+
+  def getMainCanvasData: String = {
+    mainCanvas.toDataURL("image/png")
+  }
+
+  def createImageBlock(): Future[IpfsBlock] = {
+    ipfs.block.put(Buffer.from(getMainCanvasData))
   }
 
   private def freeTempCanvas(peer: String): Unit = {

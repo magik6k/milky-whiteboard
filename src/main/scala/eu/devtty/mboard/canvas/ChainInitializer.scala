@@ -44,25 +44,28 @@ class ChainInitializer(ipfs: IpfsNode, room: String, canvas: Canvas) {
       Status.status("Downloading chain")
 
       def parseChain(top: Block): Future[Vector[String]] = {
-        println(s"Chain get at depth ${top.depth}")
+        println(s"Chain get at depth ${top.depth}, c:${top.checkpoint.nonEmpty}")
         Status.status(s"Downloading block ${top.depth}")
         val nodes = top.nodes.toArray.toVector
-        if(top.previous != null) {
+        if(top.previous != null && top.checkpoint.isEmpty) {
           ipfs.dag.get(top.previous).map {_.value.asInstanceOf[Block]}.flatMap { previous =>
             parseChain(previous)
           }.map { _ ++ nodes }
         } else {
-          Promise.successful(nodes).future
+          if(top.checkpoint.nonEmpty)
+            Promise.successful(Vector(top.checkpoint.get) ++ nodes).future
+          else
+            Promise.successful(nodes).future
         }
       }
 
       parseChain(bestBootCandidate).map { blocks =>
         Future.sequence(blocks.map { hash =>
           ipfs.block.get(hash).map { block =>
-            Status.status(s"Downloading part $hash")
-            block
+            Status.status(s"Got part $hash")
+            block.data.toString()
           }
-        }).map(_.foreach(block => canvas.drawImage(block.data.toString(), null))).andThen {
+        }).map(_.foreach(imagePart => canvas.drawImage(imagePart, null))).andThen {
           case Success(_) => Status.done()
           case Failure(e) => Status.status("Error; see dev console"); throw e
         }
